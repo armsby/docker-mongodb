@@ -76,19 +76,6 @@ _mongod_hack_ensure_arg() {
 		mongodHackedArgs+=( "$ensureArg" )
 	fi
 }
-# _mongod_hack_ensure_no_arg '--some-unwanted-arg' "$@"
-# set -- "${mongodHackedArgs[@]}"
-_mongod_hack_ensure_no_arg() {
-	local ensureNoArg="$1"; shift
-	mongodHackedArgs=()
-	while [ "$#" -gt 0 ]; do
-		local arg="$1"; shift
-		if [ "$arg" = "$ensureNoArg" ]; then
-			continue
-		fi
-		mongodHackedArgs+=( "$arg" )
-	done
-}
 # _mongod_hack_ensure_arg_val '--some-arg' 'some-val' "$@"
 # set -- "${mongodHackedArgs[@]}"
 _mongod_hack_ensure_arg_val() {
@@ -125,8 +112,10 @@ if [ "$originalArgOne" = 'mongod' ]; then
 		shouldPerformInitdb='true'
 	elif [ "$MONGO_INITDB_ROOT_USERNAME" ] || [ "$MONGO_INITDB_ROOT_PASSWORD" ]; then
 		cat >&2 <<-'EOF'
+
 			error: missing 'MONGO_INITDB_ROOT_USERNAME' or 'MONGO_INITDB_ROOT_PASSWORD'
 			       both must be specified for a user to be created
+
 		EOF
 		exit 1
 	fi
@@ -171,7 +160,6 @@ if [ "$originalArgOne" = 'mongod' ]; then
 
 		_mongod_hack_ensure_arg_val --bind_ip 127.0.0.1 "$@"
 		_mongod_hack_ensure_arg_val --port 27017 "${mongodHackedArgs[@]}"
-		_mongod_hack_ensure_no_arg --bind_ip_all "${mongodHackedArgs[@]}"
 
 		sslMode="$(_mongod_hack_have_arg '--sslPEMKeyFile' "$@" && echo 'allowSSL' || echo 'disabled')" # "BadValue: need sslPEMKeyFile when SSL is enabled" vs "BadValue: need to enable SSL via the sslMode flag when using SSL configuration parameters"
 		_mongod_hack_ensure_arg_val --sslMode "$sslMode" "${mongodHackedArgs[@]}"
@@ -259,3 +247,4 @@ if [ "$originalArgOne" = 'mongod' ]; then
 fi
 
 exec "$@"
+
